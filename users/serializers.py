@@ -60,20 +60,16 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    """Serializer pour l'authentification"""
+    """Serializer pour l'authentification - simplifié sans tenant_schema"""
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
-    tenant_schema = serializers.CharField(
-        required=False, 
-        help_text="Schema du tenant (optionnel, détecté automatiquement via le domaine)"
-    )
 
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
-        tenant_schema = attrs.get('tenant_schema')
 
         if email and password:
+            # Authentifier sur le schéma public
             user = authenticate(
                 request=self.context.get('request'),
                 username=email,
@@ -91,14 +87,13 @@ class LoginSerializer(serializers.Serializer):
                     "Ce compte est désactivé.",
                     code='authorization'
                 )
-
-            # Vérifier que l'utilisateur appartient au tenant
-            if tenant_schema and user.tenant:
-                if user.tenant.schema_name != tenant_schema:
-                    raise serializers.ValidationError(
-                        "Accès non autorisé à ce tenant.",
-                        code='authorization'
-                    )
+            
+            # Vérifier que l'utilisateur a un tenant (sauf SUPER_ADMIN)
+            if user.role != 'SUPER_ADMIN' and not user.tenant:
+                raise serializers.ValidationError(
+                    "Utilisateur non associé à un tenant.",
+                    code='authorization'
+                )
 
             attrs['user'] = user
             return attrs
@@ -107,7 +102,7 @@ class LoginSerializer(serializers.Serializer):
                 "Email et mot de passe requis.",
                 code='authorization'
             )
-
+        
 
 class TenantCreateSerializer(serializers.ModelSerializer):
     """Serializer pour créer un nouveau tenant avec son admin"""

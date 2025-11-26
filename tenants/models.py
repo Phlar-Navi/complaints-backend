@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django_tenants.models import TenantMixin, DomainMixin
 
+
 class Tenant(TenantMixin):
     name = models.CharField(max_length=255)
     zone = models.CharField(max_length=255, blank=True)
@@ -15,6 +16,15 @@ class Tenant(TenantMixin):
 
     def __str__(self):
         return f"{self.name}"
+    
+    def get_primary_domain(self):
+        """Retourne le domaine principal du tenant"""
+        try:
+            # django-tenants utilise 'domains' comme related_name
+            return self.domains.filter(is_primary=True).first()
+        except Exception:
+            return None
+
 
 class Domain(DomainMixin):
     pass

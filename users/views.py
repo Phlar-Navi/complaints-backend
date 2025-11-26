@@ -14,6 +14,8 @@ from users.serializers import (
 )
 from tenants.models import Tenant
 
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 
 class TenantCreateView(generics.CreateAPIView):
     """
@@ -82,16 +84,31 @@ class LoginView(APIView):
         # Créer des tokens JWT
         refresh = RefreshToken.for_user(user)
         
-        return Response({
+        # Préparer les informations du tenant
+        tenant_info = None
+        tenant_domain = None
+        
+        if user.tenant:
+            tenant_info = {
+                'id': str(user.tenant.id),
+                'name': user.tenant.name,
+                'schema_name': user.tenant.schema_name,
+            }
+            
+            # Récupérer le domaine principal du tenant
+            primary_domain = user.tenant.get_primary_domain()
+            if primary_domain:
+                tenant_domain = primary_domain.domain
+        
+        response_data = {
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'user': UserSerializer(user).data,
-            'tenant': {
-                'id': str(user.tenant.id) if user.tenant else None,
-                'name': user.tenant.name if user.tenant else None,
-                'schema_name': user.tenant.schema_name if user.tenant else None,
-            } if user.tenant else None
-        }, status=status.HTTP_200_OK)
+            'tenant': tenant_info,
+            'redirect_domain': tenant_domain,  # Le frontend utilisera cela pour rediriger
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):

@@ -33,8 +33,9 @@ SECRET_KEY = 'django-insecure-(6j&qs4*h(gf5-$s+50#if)pkyk-up*3usaw86=b07tp*-r5jo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
+PUBLIC_SCHEMA_NAME = 'public'
 
 # Application definition
 
@@ -96,6 +97,7 @@ CORS_ALLOW_ALL_ORIGINS = True
     #"http://127.0.0.1:3000",
 #]
 
+CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -108,6 +110,13 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ]
 }
+
+# Ou exempter toutes les routes API du CSRF
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://hopital-central.localhost:3000',
+    'http://*.localhost:3000',
+]
 
 PUBLIC_SCHEMA_URLCONF = 'complaintsManager.urls_public'
 
