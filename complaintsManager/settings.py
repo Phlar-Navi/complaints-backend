@@ -71,33 +71,82 @@ TENANT_APPS = (
     #'sla_management',
 )
 
-INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
+INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS] + [
+    'django_filters',  # ← Ajouter pour le filtrage
+]
+
+# Configuration des fichiers uploadés
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 TENANT_MODEL = "tenants.Tenant" # app.Model
 
 TENANT_DOMAIN_MODEL = "tenants.Domain"  # app.Model
 
 MIDDLEWARE = [
-    'django_tenants.middleware.main.TenantMainMiddleware',
+    # ⚠️ CRITIQUE: corsheaders DOIT être AVANT TenantMainMiddleware
     'corsheaders.middleware.CorsMiddleware',
+    'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
+    'django.middleware.common.CommonMiddleware',  
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    #"users.middleware.TenantMiddleware",
+    'complaintsManager.middleware.DebugTenantMiddleware',
 ]
 
+# Configuration CORS
 CORS_ALLOW_ALL_ORIGINS = True
-
-#CORS_ALLOWED_ORIGINS = [
-    #"http://localhost:3000",
-    #"http://127.0.0.1:3000",
-#]
-
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# IMPORTANT : Ajouter TOUS vos sous-domaines
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://*.localhost:3000',
+    'http://hopital-central.localhost:3000',
+    'http://hopital_laquintinie.localhost:3000',  # ✓ Déjà présent
+    # Ajouter aussi les versions backend
+    'http://localhost:8000',
+    'http://*.localhost:8000',
+    'http://hopital-central.localhost:8000',
+    'http://hopital_laquintinie.localhost:8000',
+]
+
+# Alternative : utiliser des wildcards (plus permissif)
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^http://\w+\.localhost:3000$",
+    r"^http://\w+\.localhost:8000$",
+]
+
+# Configuration CORS plus permissive pour le développement
+
+# OU si vous voulez être plus restrictif :
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://hopital_laquintinie.localhost:3000",
+#     "http://hopital-central.localhost:3000",
+# ]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -106,21 +155,53 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.AllowAny",
+        #"rest_framework.permissions.AllowAny",
         'rest_framework.permissions.IsAuthenticated',
-    ]
+    ],
+    # Gestion des erreurs améliorée
+    "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
+    # Format de date
+    "DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S",
 }
 
-# Ou exempter toutes les routes API du CSRF
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://hopital-central.localhost:3000',
-    'http://*.localhost:3000',
-]
+# Pour les logs en mode DEBUG
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'complaints': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
+}
 
 PUBLIC_SCHEMA_URLCONF = 'complaintsManager.urls_public'
 
 ROOT_URLCONF = 'complaintsManager.urls'
+#TENANT_URLCONF = 'complaintsManager.urls'  # Pour les tenants
 
 TEMPLATES = [
     {

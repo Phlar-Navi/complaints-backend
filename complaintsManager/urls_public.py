@@ -6,4 +6,5 @@ urlpatterns = [
     path('admin-tenant/', admin.site.urls),
     path('api/tenants/create/', TenantCreateView.as_view(), name='tenant-create'),
     path("api/", include("users.urls")),
+    path("api/", include("complaints.urls")),
 ]

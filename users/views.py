@@ -41,32 +41,25 @@ class TenantCreateView(generics.CreateAPIView):
 
 
 class UserCreateView(generics.CreateAPIView):
-    """
-    Créer un nouvel utilisateur pour un tenant
-    POST /api/users/create/
-    Nécessite d'être TENANT_ADMIN ou SUPER_ADMIN
-    """
     serializer_class = UserCreateSerializer
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
         user = self.request.user
-        
-        # Vérifier les permissions
+
         if user.role not in ['SUPER_ADMIN', 'TENANT_ADMIN']:
             raise permissions.PermissionDenied(
                 "Seuls les administrateurs peuvent créer des utilisateurs."
             )
-        
-        # Si TENANT_ADMIN, ne peut créer que pour son propre tenant
+
+        # 🔒 TENANT_ADMIN → tenant imposé
         if user.role == 'TENANT_ADMIN':
-            tenant = serializer.validated_data.get('tenant')
-            if tenant != user.tenant:
-                raise permissions.PermissionDenied(
-                    "Vous ne pouvez créer des utilisateurs que pour votre tenant."
-                )
-        
+            serializer.save(tenant=user.tenant)
+            return
+
+        # 🔓 SUPER_ADMIN → tenant fourni explicitement
         serializer.save()
+
 
 
 class LoginView(APIView):
