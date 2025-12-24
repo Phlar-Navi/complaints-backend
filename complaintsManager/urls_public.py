@@ -7,4 +7,6 @@ urlpatterns = [
     path('api/tenants/create/', TenantCreateView.as_view(), name='tenant-create'),
     path("api/", include("users.urls")),
     path("api/", include("complaints.urls")),
+    # Gestion des tenants (PUBLIC SEULEMENT)
+    path('api/', include('tenants.urls')),
 ]

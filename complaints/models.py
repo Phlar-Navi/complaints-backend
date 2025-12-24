@@ -3,7 +3,10 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
+from model_utils import FieldTracker
 
+# Dans la classe Complaint, ajouter :
+# tracker = FieldTracker(fields=['assigned_user', 'status'])
 
 class Complaint(models.Model):
     STATUS_CHOICES = [
@@ -68,6 +71,8 @@ class Complaint(models.Model):
     )
     
     updated_at = models.DateTimeField(auto_now=True)
+    
+    tracker = FieldTracker(fields=['assigned_user', 'status'])
     
     class Meta:
         indexes = [

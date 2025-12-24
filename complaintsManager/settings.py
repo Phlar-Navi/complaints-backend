@@ -40,8 +40,8 @@ PUBLIC_SCHEMA_NAME = 'public'
 # Application definition
 
 SHARED_APPS = (
-    'django_tenants',  # mandatory
-    'tenants', # you must list the app where your tenant model resides in
+    'django_tenants',
+    'tenants',
 
     'django.contrib.contenttypes',
 
@@ -65,6 +65,7 @@ TENANT_APPS = (
     # Apps avec migrations propres à chaque tenant
     'complaints',
     'categories',
+    'notifications',
     #'assignments',
     #'audits',
     #'notifications',

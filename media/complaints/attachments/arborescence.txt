@@ -1,0 +1,100 @@
+└── villages/                           # 📂 Données des villages
+    │
+    ├── bafoussam/
+    │   ├── village.json                # Métadonnées du village
+    │   │
+    │   ├── lexique/
+    │   │   ├── snaRZEbgD6OePDLM4cCA/
+    │   │   │   ├── data.json           # { "francais": "Bonjour", "local": "Mbolo" }
+    │   │   │   ├── audio.mp3           # Prononciation
+    │   │   │   └── image.jpg           # (optionnel)
+    │   │   │
+    │   │   ├── U7dipE3Nf9p4yJJM24uL/
+    │   │   │   ├── data.json
+    │   │   │   └── audio.mp3
+    │   │   │
+    │   │   └── X9kPm2LvBnRt5wQs8Yz/
+    │   │       ├── data.json
+    │   │       └── audio.mp3
+    │   │
+    │   ├── alphabet/
+    │   │   ├── A1b2C3d4E5f6G7h8I9j0/
+    │   │   │   ├── data.json           # { "french": "A", "local": "À" }
+    │   │   │   └── audio.mp3
+    │   │   │
+    │   │   ├── K1l2M3n4O5p6Q7r8S9t0/
+    │   │   │   ├── data.json
+    │   │   │   └── audio.mp3
+    │   │   │
+    │   │   └── U1v2W3x4Y5z6A7b8C9d0/
+    │   │       ├── data.json
+    │   │       └── audio.mp3
+    │   │
+    │   ├── proverbes/
+    │   │   ├── Pr0v3rb3_001_Xm9Kp/
+    │   │   │   ├── data.json           # { "francais": "Si tu veux...", "local": "..." }
+    │   │   │   ├── audio.mp3
+    │   │   │   └── image.jpg           # (optionnel)
+    │   │   │
+    │   │   ├── Pr0v3rb3_002_Tn8Lq/
+    │   │   │   ├── data.json
+    │   │   │   └── audio.mp3
+    │   │   │
+    │   │   └── Pr0v3rb3_003_Zo7Mr/
+    │   │       ├── data.json
+    │   │       └── audio.mp3
+    │   │
+    │   ├── mets/
+    │   │   ├── M3ts_001_Nkui_Xy9/
+    │   │   │   ├── data.json           # { "name": "Nkui", "description": "..." }
+    │   │   │   ├── image.jpg           # Photo du plat
+    │   │   │   └── audio.mp3           # (optionnel) Prononciation
+    │   │   │
+    │   │   ├── M3ts_002_Koki_Zm8/
+    │   │   │   ├── data.json
+    │   │   │   ├── image.jpg
+    │   │   │   └── audio.mp3
+    │   │   │
+    │   │   └── M3ts_003_Mbongo_Wn7/
+    │   │       ├── data.json
+    │   │       └── image.jpg
+    │   │
+    │   └── histoires/
+    │       ├── H1st0ir3_001_RoiLeopard/
+    │       │   ├── data.json           # { "title": "Le roi...", "content": "..." }
+    │       │   ├── image.jpg           # Image de couverture
+    │       │   └── audio.mp3           # (optionnel) Histoire audio
+    │       │
+    │       ├── H1st0ir3_002_EnfantTambour/
+    │       │   ├── data.json
+    │       │   ├── image.jpg
+    │       │   └── audio.mp3
+    │       │
+    │       └── H1st0ir3_003_ArbreInterdit/
+    │           ├── data.json
+    │           └── image.jpg
+    │
+    ├── bamoun/
+    │   ├── village.json
+    │   ├── lexique/
+    │   │   └── [même structure...]
+    │   ├── alphabet/
+    │   ├── proverbes/
+    │   ├── mets/
+    │   └── histoires/
+    │
+    ├── douala/
+    │   ├── village.json
+    │   ├── lexique/
+    │   ├── alphabet/
+    │   ├── proverbes/
+    │   ├── mets/
+    │   └── histoires/
+    │
+    └── bassa/
+        ├── village.json
+        ├── lexique/
+        ├── alphabet/
+        ├── proverbes/
+        ├── mets/
+        └── histoires/

@@ -16,6 +16,192 @@ from tenants.models import Tenant
 
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
+"""
+Ajouter ces vues à votre fichier users/views.py existant
+"""
+
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import update_session_auth_hash
+
+class UpdateProfileView(APIView):
+    """
+    Mettre à jour le profil de l'utilisateur connecté
+    PUT /api/users/profile/
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def put(self, request):
+        user = request.user
+        data = request.data
+        
+        # Champs modifiables
+        if 'full_name' in data:
+            user.full_name = data['full_name']
+        
+        if 'phone_number' in data:
+            user.phone_number = data['phone_number']
+        
+        if 'email' in data:
+            # Vérifier que l'email n'est pas déjà pris
+            from users.models import CustomUser
+            if CustomUser.objects.filter(email=data['email']).exclude(id=user.id).exists():
+                return Response(
+                    {'error': 'Cet email est déjà utilisé'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            user.email = data['email']
+        
+        user.save()
+        
+        # Retourner le profil mis à jour
+        from users.serializers import UserSerializer
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+
+class UploadAvatarView(APIView):
+    """
+    Upload photo de profil
+    POST /api/users/profile/avatar/
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        
+        if 'avatar' not in request.FILES:
+            return Response(
+                {'error': 'Aucun fichier fourni'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        avatar = request.FILES['avatar']
+        
+        # Valider la taille (max 2MB)
+        if avatar.size > 2 * 1024 * 1024:
+            return Response(
+                {'error': 'Le fichier est trop volumineux (max 2MB)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Valider le type
+        if not avatar.content_type.startswith('image/'):
+            return Response(
+                {'error': 'Le fichier doit être une image'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Sauvegarder (nécessite d'ajouter un champ avatar au modèle)
+        user.avatar = avatar
+        user.save()
+        
+        from users.serializers import UserSerializer
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+
+
+class UpdatePasswordView(APIView):
+    """
+    Changer le mot de passe
+    POST /api/users/profile/password/
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        user = request.user
+        data = request.data
+        
+        # Vérifier l'ancien mot de passe
+        old_password = data.get('old_password')
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        
+        if not old_password or not new_password or not confirm_password:
+            return Response(
+                {'error': 'Tous les champs sont requis'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not user.check_password(old_password):
+            return Response(
+                {'error': 'Mot de passe actuel incorrect'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if new_password != confirm_password:
+            return Response(
+                {'error': 'Les mots de passe ne correspondent pas'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if len(new_password) < 8:
+            return Response(
+                {'error': 'Le mot de passe doit contenir au moins 8 caractères'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Changer le mot de passe
+        user.set_password(new_password)
+        user.save()
+        
+        # Mettre à jour la session
+        update_session_auth_hash(request, user)
+        
+        return Response({'message': 'Mot de passe mis à jour avec succès'})
+
+
+class UserPreferencesView(APIView):
+    """
+    Gérer les préférences utilisateur
+    GET/PUT /api/users/preferences/
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        
+        # Récupérer ou créer les préférences
+        from users.models import UserPreferences
+        preferences, created = UserPreferences.objects.get_or_create(user=user)
+        
+        return Response({
+            'email_notifications': preferences.email_notifications,
+            'push_notifications': preferences.push_notifications,
+            'language': preferences.language,
+            'theme': preferences.theme,
+        })
+    
+    def put(self, request):
+        user = request.user
+        data = request.data
+        
+        from users.models import UserPreferences
+        preferences, created = UserPreferences.objects.get_or_create(user=user)
+        
+        if 'email_notifications' in data:
+            preferences.email_notifications = data['email_notifications']
+        
+        if 'push_notifications' in data:
+            preferences.push_notifications = data['push_notifications']
+        
+        if 'language' in data:
+            preferences.language = data['language']
+        
+        if 'theme' in data:
+            preferences.theme = data['theme']
+        
+        preferences.save()
+        
+        return Response({
+            'email_notifications': preferences.email_notifications,
+            'push_notifications': preferences.push_notifications,
+            'language': preferences.language,
+            'theme': preferences.theme,
+        })
+    
 
 class TenantCreateView(generics.CreateAPIView):
     """
