@@ -12,6 +12,29 @@ from tenants.serializers import (
 )
 from users.models import CustomUser
 
+from rest_framework.permissions import AllowAny
+from django.db import connection
+
+class HealthCheckView(APIView):
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        try:
+            # Test database
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            
+            return Response({
+                'status': 'healthy',
+                'database': 'connected',
+                'schema': connection.schema_name
+            })
+        except Exception as e:
+            return Response({
+                'status': 'unhealthy',
+                'error': str(e)
+            }, status=500)
+
 
 class IsSuperAdmin(permissions.BasePermission):
     """Permission pour vérifier que l'utilisateur est SUPER_ADMIN"""
