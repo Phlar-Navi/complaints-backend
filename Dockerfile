@@ -95,12 +95,11 @@ EXPOSE 8000
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Commande par défaut
-CMD sh -c "gunicorn complaintsManager.wsgi:application \
-  --bind 0.0.0.0:${PORT:-8000} \
+CMD gunicorn complaintsManager.wsgi:application \
+  --bind 0.0.0.0:$PORT \
   --workers 4 \
   --threads 2 \
   --timeout 60 \
   --access-logfile - \
   --error-logfile - \
-  --log-level info"
-
+  --log-level info
