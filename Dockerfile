@@ -88,11 +88,19 @@ USER django
 EXPOSE 8000
 
 # Healthcheck pour Docker Swarm/Kubernetes
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health/ || exit 1
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    # CMD curl -f http://localhost:8000/api/health/ || exit 1
 
 # Point d'entrée
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Commande par défaut
-CMD ["sh", "-c", "gunicorn complaintsManager.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 4 --threads 2 --timeout 60 --access-logfile - --error-logfile - --log-level info"]
+CMD sh -c "gunicorn complaintsManager.wsgi:application \
+  --bind 0.0.0.0:${PORT:-8000} \
+  --workers 4 \
+  --threads 2 \
+  --timeout 60 \
+  --access-logfile - \
+  --error-logfile - \
+  --log-level info"
+
