@@ -106,12 +106,7 @@ echo "======================================"
 echo "🎯 Starting Gunicorn on 0.0.0.0:$PORT"
 echo ""
 
-# CRITIQUE: Exécuter la commande CMD du Dockerfile
-exec "$@"
-
-echo "🎯 Starting Gunicorn on 0.0.0.0:$PORT"
-
-# Lancer directement Gunicorn avec PORT interpolé
+# Lancer Gunicorn - SEULEMENT ICI
 exec gunicorn complaintsManager.wsgi:application \
   --bind "0.0.0.0:${PORT}" \
   --workers 4 \
