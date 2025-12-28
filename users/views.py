@@ -31,6 +31,10 @@ from rest_framework.exceptions import ValidationError
 from django.db import connection
 
 class LoginView(APIView):
+    """
+    Vue de login qui cherche l'utilisateur dans TOUS les tenants
+    et le redirige vers son tenant
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -38,44 +42,44 @@ class LoginView(APIView):
         password = request.data.get("password")
 
         if not email or not password:
-            return Response({"detail": "Email et mot de passe requis."}, status=400)
+            return Response(
+                {"detail": "Email et mot de passe requis."},
+                status=400
+            )
 
         # 1️⃣ Chercher l'utilisateur dans TOUS les tenants
-        tenant = None
         user_found = None
+        tenant_found = None
         
-        # Chercher dans tous les tenants
-        for t in Tenant.objects.exclude(schema_name='public'):
-            with schema_context(t.schema_name):
+        # Parcourir tous les tenants
+        for tenant in Tenant.objects.all().order_by('schema_name'):
+            with schema_context(tenant.schema_name):
                 try:
+                    # Chercher l'utilisateur dans ce tenant
                     user_candidate = CustomUser.objects.get(email=email)
+                    
                     # Vérifier le mot de passe
                     if user_candidate.check_password(password):
-                        tenant = t
-                        user_found = user_candidate
-                        break
+                        if user_candidate.is_active:
+                            user_found = user_candidate
+                            tenant_found = tenant
+                            break
+                        else:
+                            return Response(
+                                {"detail": "Compte désactivé."},
+                                status=403
+                            )
                 except CustomUser.DoesNotExist:
                     continue
-        
-        # Si pas trouvé dans les tenants, chercher dans public
-        if not user_found:
-            with schema_context('public'):
-                try:
-                    user_candidate = CustomUser.objects.get(email=email)
-                    if user_candidate.check_password(password):
-                        # Utilisateur du schema public (SUPER_ADMIN)
-                        tenant = Tenant.objects.get(schema_name='public')
-                        user_found = user_candidate
-                except CustomUser.DoesNotExist:
-                    pass
-        
-        if not user_found:
-            return Response({"detail": "Identifiants incorrects."}, status=400)
 
-        if not user_found.is_active:
-            return Response({"detail": "Compte désactivé."}, status=403)
+        # Si aucun utilisateur trouvé
+        if not user_found:
+            return Response(
+                {"detail": "Identifiants incorrects."},
+                status=400
+            )
 
-        # 2️⃣ Créer tokens JWT
+        # 2️⃣ Créer les tokens JWT
         refresh = RefreshToken.for_user(user_found)
 
         # 3️⃣ Préparer la réponse
@@ -87,21 +91,36 @@ class LoginView(APIView):
                 "email": user_found.email,
                 "role": user_found.role,
                 "first_name": user_found.first_name,
-                "last_name": user_found.last_name
-            }
+                "last_name": user_found.last_name,
+            },
         }
 
-        # Ajouter les infos du tenant si ce n'est pas public
-        if tenant and tenant.schema_name != 'public':
+        # 4️⃣ Ajouter les infos du tenant
+        if tenant_found:
             # Normaliser le schema_name pour l'URL (underscore → tiret)
-            domain_name = tenant.schema_name.replace('_', '-')
+            domain_schema = tenant_found.schema_name.replace('_', '-')
             
             response_data["tenant"] = {
-                "schema_name": tenant.schema_name,
-                "name": tenant.name,
-                "domain": f"{domain_name}.16.16.202.86"
+                "id": str(tenant_found.id),
+                "schema_name": tenant_found.schema_name,
+                "name": tenant_found.name,
             }
-            response_data["redirect_domain"] = f"{domain_name}.16.16.202.86"
+            
+            # Déterminer le domaine de redirection
+            # Essayer de trouver le domaine principal
+            from tenants.models import Domain
+            primary_domain = Domain.objects.filter(
+                tenant=tenant_found,
+                is_primary=True
+            ).first()
+            
+            if primary_domain:
+                redirect_domain = primary_domain.domain
+            else:
+                # Fallback : construire le domaine
+                redirect_domain = f"{domain_schema}.16.16.202.86"
+            
+            response_data["redirect_domain"] = redirect_domain
 
         return Response(response_data)
 
