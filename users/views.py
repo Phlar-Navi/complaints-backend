@@ -247,8 +247,48 @@ class UserCreateView(generics.CreateAPIView):
         serializer.save()
 
 
-
 class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data["user"]
+
+        refresh = RefreshToken.for_user(user)
+
+        tenant_info = None
+        tenant_domain = None
+
+        # 🔥 C’EST ICI qu’on résout le tenant
+        if user.role != "SUPER_ADMIN":
+            if not user.tenant:
+                raise ValidationError("Utilisateur sans tenant")
+
+            tenant = user.tenant
+            domain = tenant.get_primary_domain()
+
+            tenant_info = {
+                "id": str(tenant.id),
+                "name": tenant.name,
+                "schema_name": tenant.schema_name,
+            }
+            tenant_domain = domain.domain if domain else None
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": UserSerializer(user).data,
+            "tenant": tenant_info,
+            "redirect_domain": tenant_domain,
+        })
+
+
+class LoginView_legacy(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):

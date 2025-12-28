@@ -60,6 +60,31 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get("email")
+        password = attrs.get("password")
+
+        user = authenticate(
+            request=self.context.get("request"),
+            username=email,
+            password=password,
+        )
+
+        if not user:
+            raise serializers.ValidationError("Identifiants incorrects")
+
+        if not user.is_active:
+            raise serializers.ValidationError("Compte désactivé")
+
+        # ✅ ICI : on NE vérifie PAS le tenant
+        attrs["user"] = user
+        return attrs
+
+
+class LoginSerializer_legacy(serializers.Serializer):
     """Serializer pour l'authentification - simplifié sans tenant_schema"""
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
@@ -89,11 +114,11 @@ class LoginSerializer(serializers.Serializer):
                 )
             
             # Vérifier que l'utilisateur a un tenant (sauf SUPER_ADMIN)
-            if user.role != 'SUPER_ADMIN' and not user.tenant:
-                raise serializers.ValidationError(
-                    "Utilisateur non associé à un tenant.",
-                    code='authorization'
-                )
+            # if user.role != 'SUPER_ADMIN' and not user.tenant:
+                # raise serializers.ValidationError(
+                    # "Utilisateur non associé à un tenant.",
+                    # code='authorization'
+                # )
 
             attrs['user'] = user
             return attrs
