@@ -37,6 +37,82 @@ class LoginView(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
 
+        if not email or not password:
+            return Response({"detail": "Email et mot de passe requis."}, status=400)
+
+        # 1️⃣ Chercher l'utilisateur dans TOUS les tenants
+        tenant = None
+        user_found = None
+        
+        # Chercher dans tous les tenants
+        for t in Tenant.objects.exclude(schema_name='public'):
+            with schema_context(t.schema_name):
+                try:
+                    user_candidate = CustomUser.objects.get(email=email)
+                    # Vérifier le mot de passe
+                    if user_candidate.check_password(password):
+                        tenant = t
+                        user_found = user_candidate
+                        break
+                except CustomUser.DoesNotExist:
+                    continue
+        
+        # Si pas trouvé dans les tenants, chercher dans public
+        if not user_found:
+            with schema_context('public'):
+                try:
+                    user_candidate = CustomUser.objects.get(email=email)
+                    if user_candidate.check_password(password):
+                        # Utilisateur du schema public (SUPER_ADMIN)
+                        tenant = Tenant.objects.get(schema_name='public')
+                        user_found = user_candidate
+                except CustomUser.DoesNotExist:
+                    pass
+        
+        if not user_found:
+            return Response({"detail": "Identifiants incorrects."}, status=400)
+
+        if not user_found.is_active:
+            return Response({"detail": "Compte désactivé."}, status=403)
+
+        # 2️⃣ Créer tokens JWT
+        refresh = RefreshToken.for_user(user_found)
+
+        # 3️⃣ Préparer la réponse
+        response_data = {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": {
+                "id": str(user_found.id),
+                "email": user_found.email,
+                "role": user_found.role,
+                "first_name": user_found.first_name,
+                "last_name": user_found.last_name
+            }
+        }
+
+        # Ajouter les infos du tenant si ce n'est pas public
+        if tenant and tenant.schema_name != 'public':
+            # Normaliser le schema_name pour l'URL (underscore → tiret)
+            domain_name = tenant.schema_name.replace('_', '-')
+            
+            response_data["tenant"] = {
+                "schema_name": tenant.schema_name,
+                "name": tenant.name,
+                "domain": f"{domain_name}.16.16.202.86"
+            }
+            response_data["redirect_domain"] = f"{domain_name}.16.16.202.86"
+
+        return Response(response_data)
+
+
+class LoginView_Presque_optimale(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
         # 1️⃣ Identifier le tenant de l'utilisateur
         try:
             # Chercher l'utilisateur et son tenant depuis le schéma public

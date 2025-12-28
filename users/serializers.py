@@ -127,7 +127,7 @@ class LoginSerializer(serializers.Serializer):
                 "Email et mot de passe requis.",
                 code='authorization'
             )
-        
+
 
 class TenantCreateSerializer(serializers.ModelSerializer):
     """Serializer pour créer un nouveau tenant avec son admin"""
