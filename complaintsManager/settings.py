@@ -122,8 +122,20 @@ CORS_ALLOW_METHODS = [
     'PUT',
 ]
 
-# IMPORTANT : Ajouter TOUS vos sous-domaines
+BASE_DOMAIN = os.getenv('BASE_DOMAIN', '16.16.202.86')
+
 CSRF_TRUSTED_ORIGINS = [
+    f'http://{BASE_DOMAIN}:3000',
+    f'http://*.{BASE_DOMAIN}:3000',
+    f'http://{BASE_DOMAIN}:8000',
+    f'http://*.{BASE_DOMAIN}:8000',
+    # Si vous passez en HTTPS plus tard
+    f'https://{BASE_DOMAIN}',
+    f'https://*.{BASE_DOMAIN}',
+]
+
+# IMPORTANT : Ajouter TOUS vos sous-domaines
+CSRF_TRUSTED_ORIGINS_OLD = [
     "https://*.railway.app",
     'http://localhost:3000',
     'http://*.localhost:3000',
