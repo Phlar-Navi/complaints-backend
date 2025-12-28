@@ -29,6 +29,52 @@ from django.contrib.auth import update_session_auth_hash
 from rest_framework.exceptions import ValidationError
 from django.db import connection
 
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        # 1️⃣ Identifier le tenant de l'utilisateur
+        try:
+            # Chercher l'utilisateur et son tenant depuis le schéma public
+            user = CustomUser.objects.select_related("tenant").get(email=email)
+            tenant = user.tenant
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "Identifiants incorrects."}, status=400)
+
+        if not tenant or tenant.schema_name == "public":
+            return Response({"detail": "Utilisateur non associé à un tenant."}, status=400)
+
+        # 2️⃣ Authentifier dans le schéma correct
+        with schema_context(tenant.schema_name):
+            user = authenticate(username=email, password=password)
+            if not user or not user.is_active:
+                return Response({"detail": "Identifiants incorrects."}, status=400)
+
+        # 3️⃣ Créer tokens JWT
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "role": user.role,
+                "first_name": user.first_name,
+                "last_name": user.last_name
+            },
+            "tenant": {
+                "schema_name": tenant.schema_name,
+                "name": tenant.name,
+                "domain": f"{tenant.schema_name}.16.16.202.86"
+            },
+            "redirect_domain": f"{tenant.schema_name}.16.16.202.86"
+        })
+
+
 class UpdateProfileView(APIView):
     """
     Mettre à jour le profil de l'utilisateur connecté
@@ -250,7 +296,7 @@ class UserCreateView(generics.CreateAPIView):
         serializer.save()
 
 
-class LoginView(APIView):
+class LoginView_obsolete(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
