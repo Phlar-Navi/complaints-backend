@@ -26,6 +26,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import update_session_auth_hash
 
+from rest_framework.exceptions import ValidationError
+
+
 class UpdateProfileView(APIView):
     """
     Mettre à jour le profil de l'utilisateur connecté
