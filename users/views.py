@@ -27,7 +27,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import update_session_auth_hash
 
 from rest_framework.exceptions import ValidationError
-
+from django.db import connection
 
 class UpdateProfileView(APIView):
     """
@@ -250,6 +250,44 @@ class UserCreateView(generics.CreateAPIView):
         serializer.save()
 
 
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = LoginSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data['user']
+        refresh = RefreshToken.for_user(user)
+
+        tenant = getattr(request, 'tenant', None)
+
+        tenant_info = None
+        redirect_domain = None
+
+        if tenant and tenant.schema_name != 'public':
+            tenant_info = {
+                'id': str(tenant.id),
+                'name': tenant.name,
+                'schema_name': tenant.schema_name,
+            }
+
+            primary_domain = tenant.domains.filter(is_primary=True).first()
+            if primary_domain:
+                redirect_domain = primary_domain.domain
+
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data,
+            'tenant': tenant_info,
+            'redirect_domain': redirect_domain,
+        })
+
+
 class LoginView_notWorking(APIView):
     permission_classes = [AllowAny]
 
@@ -291,7 +329,7 @@ class LoginView_notWorking(APIView):
         })
 
 
-class LoginView(APIView):
+class LoginView_legacy(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
