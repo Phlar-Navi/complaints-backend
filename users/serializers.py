@@ -59,7 +59,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         return user
 
 
-class LoginSerializer(serializers.Serializer):
+class LoginSerializer_notWorking(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
@@ -84,7 +84,7 @@ class LoginSerializer(serializers.Serializer):
         return attrs
 
 
-class LoginSerializer_legacy(serializers.Serializer):
+class LoginSerializer(serializers.Serializer):
     """Serializer pour l'authentification - simplifié sans tenant_schema"""
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)

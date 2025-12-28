@@ -250,7 +250,7 @@ class UserCreateView(generics.CreateAPIView):
         serializer.save()
 
 
-class LoginView(APIView):
+class LoginView_notWorking(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -291,7 +291,7 @@ class LoginView(APIView):
         })
 
 
-class LoginView_legacy(APIView):
+class LoginView(APIView):
     permission_classes = [AllowAny]
     
     def post(self, request):
