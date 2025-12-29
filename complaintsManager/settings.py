@@ -88,7 +88,8 @@ TENANT_DOMAIN_MODEL = "tenants.Domain"  # app.Model
 MIDDLEWARE = [
     # ⚠️ CRITIQUE: corsheaders DOIT être AVANT TenantMainMiddleware
     'corsheaders.middleware.CorsMiddleware',
-    'django_tenants.middleware.main.TenantMainMiddleware',
+    'complaintsManager.middleware.CustomTenantMiddleware',
+    #'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',  

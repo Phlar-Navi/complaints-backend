@@ -2,8 +2,53 @@
 
 from django.db import connection
 import logging
+from django_tenants.middleware.main import TenantMainMiddleware
+from tenants.models import Domain
 
 logger = logging.getLogger(__name__)
+
+class CustomTenantMiddleware(TenantMainMiddleware):
+    """
+    Middleware qui supporte les tirets dans les hostnames
+    en les convertissant en underscores pour chercher le schema
+    """
+    
+    def get_tenant(self, domain_model, hostname):
+        # 1. Essayer d'abord avec le hostname tel quel
+        try:
+            domain = domain_model.objects.select_related('tenant').get(domain=hostname)
+            return domain.tenant
+        except domain_model.DoesNotExist:
+            pass
+        
+        # 2. Si pas trouvé, essayer avec underscores
+        hostname_with_underscores = hostname.replace('-', '_')
+        if hostname_with_underscores != hostname:
+            try:
+                domain = domain_model.objects.select_related('tenant').get(domain=hostname_with_underscores)
+                return domain.tenant
+            except domain_model.DoesNotExist:
+                pass
+        
+        # 3. Si toujours pas trouvé, vérifier si un tenant a ce schema_name avec underscores
+        # Extraire le sous-domaine
+        subdomain = hostname.split('.')[0] if '.' in hostname else hostname
+        schema_with_underscores = subdomain.replace('-', '_')
+        
+        try:
+            # Chercher un domaine du tenant qui a ce schema
+            from tenants.models import Tenant
+            tenant = Tenant.objects.get(schema_name=schema_with_underscores)
+            # Vérifier qu'il a au moins un domaine
+            if tenant.domains.exists():
+                return tenant
+        except Tenant.DoesNotExist:
+            pass
+        
+        # 4. Aucun tenant trouvé
+        raise domain_model.DoesNotExist(
+            f"No tenant found for hostname: {hostname}"
+        )
 
 class DebugTenantMiddleware:
     """Middleware pour débugger les problèmes de tenant et CORS"""
