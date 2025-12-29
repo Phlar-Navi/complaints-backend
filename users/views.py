@@ -30,8 +30,90 @@ from django.contrib.auth import authenticate
 from rest_framework.exceptions import ValidationError
 from django.db import connection
 
-# ✅ LoginView CORRIGÉ
 class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        if not email or not password:
+            return Response(
+                {"detail": "Email et mot de passe requis."},
+                status=400
+            )
+
+        try:
+            user = CustomUser.objects.get(email=email)
+        except CustomUser.DoesNotExist:
+            return Response({"detail": "Identifiants incorrects."}, status=400)
+
+        if not user.check_password(password):
+            return Response({"detail": "Identifiants incorrects."}, status=400)
+
+        if not user.is_active:
+            return Response({"detail": "Compte désactivé."}, status=403)
+
+        # 🔐 CAS 1 : SUPER ADMIN (PUBLIC)
+        if user.role == "SUPER_ADMIN":
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "role": user.role,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
+                "redirect_domain": "kidjamo.app",  # dashboard public
+                "is_public_admin": True
+            })
+
+        # 🔐 CAS 2 : UTILISATEUR TENANT
+        if not user.tenant:
+            return Response(
+                {"detail": "Utilisateur non associé à un tenant."},
+                status=400
+            )
+
+        tenant = user.tenant
+        primary_domain = Domain.objects.filter(
+            tenant=tenant,
+            is_primary=True
+        ).first()
+
+        if not primary_domain:
+            return Response(
+                {"detail": "Configuration du tenant incomplète."},
+                status=500
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": {
+                "id": str(user.id),
+                "email": user.email,
+                "role": user.role,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+            },
+            "tenant": {
+                "id": str(tenant.id),
+                "schema_name": tenant.schema_name,
+                "name": tenant.name,
+            },
+            "redirect_domain": primary_domain.domain,
+            "is_public_admin": False
+        })
+
+
+class LoginView_NON_permissif_pour_super_admin(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -90,7 +172,7 @@ class LoginView(APIView):
         }
 
         return Response(response_data)
-    
+
 
 class LoginView_Presque_optimale(APIView):
     permission_classes = [AllowAny]
