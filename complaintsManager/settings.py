@@ -126,6 +126,7 @@ CORS_ALLOW_METHODS = [
 BASE_DOMAIN = os.getenv('BASE_DOMAIN', '16.16.202.86')
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://complaints.kidjamo.app",
     f'http://{BASE_DOMAIN}:3000',
     f'http://*.{BASE_DOMAIN}:3000',
     f'http://{BASE_DOMAIN}:8000',
