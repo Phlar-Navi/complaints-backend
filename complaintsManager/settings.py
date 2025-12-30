@@ -16,8 +16,8 @@ import os
 from decouple import config, Csv
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
 }
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -129,6 +129,9 @@ BASE_DOMAIN = os.getenv('BASE_DOMAIN', '16.16.202.86')
 
 CSRF_TRUSTED_ORIGINS = [
     "https://complaints.kidjamo.app",
+    "https://*.complaints.kidjamo.app",
+    "complaints.kidjamo.app",
+    ".complaints.kidjamo.app",
     f'http://{BASE_DOMAIN}:3000',
     f'http://*.{BASE_DOMAIN}:3000',
     f'http://{BASE_DOMAIN}:8000',
